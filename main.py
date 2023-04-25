@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-from models import Player, Event
+from models import Player, Event, PlayerCreate,PlayerResponse,PlayerGet, EventCreate,EventResponse
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import (
@@ -31,22 +31,17 @@ players = [
     Player(id=2, name="Jari", events=[events[1]]),
 ]
 
-@app.get("/players", response_model=List[Player])
+@app.get("/players", response_model=List[PlayerGet])
 def get_players():
     
     return players
 
-class PlayerCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=50)
-
-class PlayerResponse(BaseModel):
-    id: int
 
 @app.post("/players", response_model=PlayerResponse, status_code=201)
 async def create_player(player_create: PlayerCreate):
     new_player = Player(id=len(players) + 1, name=player_create.name)
     players.append(new_player)
-    return {"id": new_player.id}
+    return {"id": new_player.id, "name": new_player.name}
 
 @app.get("/players/{id}", response_model=Player)
 async def get_player(id: int):
@@ -56,12 +51,6 @@ async def get_player(id: int):
     player_events = [e for e in events if e.player_id == id]
     return {"id": player.id, "name": player.name, "events": player_events}
 
-class EventCreate(BaseModel):
-    type: str = Field(..., min_length=1, max_length=50)
-    detail: str = Field(..., min_length=1, max_length=50)
-
-class EventResponse(BaseModel):
-    id: int
     
 @app.post("/events", response_model=EventResponse, status_code=201)
 async def create_event(event_create: EventCreate, player_id: int):
