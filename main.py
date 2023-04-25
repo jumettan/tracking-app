@@ -13,18 +13,22 @@ from sqlalchemy import (
     DateTime,
 )
 
+VALID_EVENT_TYPES = ["level_started", "level_solved","string"]
 DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(DATABASE_URL)
 
 app = FastAPI()
 metadata = MetaData()
 
-players = [
-   
+events = [
+    Event(id=1, type="level_started", detail="level_1212_001", timestamp=datetime.now(), player_id=1),
+    Event(id=1, type="level_solved", detail="level_1212_001", timestamp=datetime.now(), player_id=2)
+    
 ]
 
-events = [
-    
+players = [
+    Player(id=1, name="Reijo", events=[events[0]]),
+    Player(id=2, name="Jari", events=[events[1]]),
 ]
 
 @app.get("/players", response_model=List[Player])
@@ -58,13 +62,18 @@ class EventCreate(BaseModel):
 
 class EventResponse(BaseModel):
     id: int
-
+    
 @app.post("/events", response_model=EventResponse, status_code=201)
 async def create_event(event_create: EventCreate, player_id: int):
     player = next((p for p in players if p.id == player_id), None)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
-    new_event = Event(id=len(events) + 1, type=event_create.type, detail=event_create.detail, timestamp=datetime.now(), player_id=player_id)
+    
+    # generate a new ID for the event that is not already in use
+    used_ids = [e.id for e in player.events]
+    new_id = max(used_ids) + 1 if used_ids else 1
+    
+    new_event = Event(id=new_id, type=event_create.type, detail=event_create.detail, timestamp=datetime.now(), player_id=player_id)
     player.events.append(new_event)
     events.append(new_event)
     return {"id": new_event.id}
@@ -74,9 +83,18 @@ async def get_player_events(id: int, type: str = None):
     player = next((p for p in players if p.id == id), None)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
-    if type and type not in Event.Types:
+    if type and type not in VALID_EVENT_TYPES:
             raise HTTPException(status_code=400, detail="Invalid event type")
     player_events = player.events
     if type:
         player_events = [e for e in player_events if e.type == type]
-    return [e.dict(exclude={"type", "detail", "player_id", "TYPES"}) for e in player_events]
+    return [
+        Event(
+            id=e.id,
+            type=e.type,
+            detail=e.detail,
+            player_id=e.player_id,
+            timestamp=e.timestamp
+        ).dict()
+        for e in player_events
+    ]

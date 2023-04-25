@@ -34,9 +34,19 @@ class Event(BaseModel):
     detail: str
     timestamp: datetime
     player_id: int
-    
-    Types = ["level_started", "level_solved"]
-    
+
+    _max_id = 0
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.id is None:
+            self.__class__._max_id += 1
+            self.id = self.__class__._max_id
+
+    @classmethod
+    def create_event(cls, type: str, detail: str, timestamp: datetime, player_id: int):
+        return cls(id=None, type=type, detail=detail, timestamp=timestamp, player_id=player_id)
+            
     class Config:
         orm_mode = True
 
