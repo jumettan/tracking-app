@@ -1,6 +1,6 @@
 # tracking-app
 ohjelma on tehty Python 3.9.13 versiolla.
-ohjelma seuraa pelaajan edistymistä
+ohjelma seuraa pelaajan edistymistä.
 lataa tiedosto koneellesi.
 siirry joko komentokehoteella tiedostoon tai avaa suoraan vscodessa.
 kirjoita alla olevat komennot terminaaliin. tiedosto on sijainti näyttää kutakuinkin tältä(C:\jtn\jtn\tracking_app)
