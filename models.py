@@ -55,7 +55,11 @@ class PlayerResponse(BaseModel):
     id: int
     name: str
 
-
+class PlayerInfo(BaseModel):
+    id: int
+    name: str
+    events: List[Event] = []
+    
     def __init__(self, **data):
         super().__init__(**data)
         if self.id is None:

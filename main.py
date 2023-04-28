@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-from models import Player, Event, PlayerCreate,PlayerResponse,PlayerGet, EventCreate,EventResponse
+from models import Player, Event, PlayerCreate, PlayerInfo, PlayerResponse,PlayerGet, EventCreate,EventResponse
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import (
@@ -21,14 +21,11 @@ app = FastAPI()
 metadata = MetaData()
 
 events = [
-    Event(id=1, type="level_started", detail="level_1212_001", timestamp=datetime.now(), player_id=1),
-    Event(id=1, type="level_solved", detail="level_1212_001", timestamp=datetime.now(), player_id=2)
-    
+   
 ]
 
 players = [
-    Player(id=1, name="Reijo", events=[events[0]]),
-    Player(id=2, name="Jari", events=[events[1]]),
+   
 ]
 
 @app.get("/players", response_model=List[PlayerGet])
@@ -43,29 +40,13 @@ async def create_player(player_create: PlayerCreate):
     players.append(new_player)
     return {"id": new_player.id, "name": new_player.name}
 
-@app.get("/players/{id}", response_model=Player)
+@app.get("/players/{id}", response_model=PlayerInfo)
 async def get_player(id: int):
     player = next((p for p in players if p.id == id), None)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
     player_events = [e for e in events if e.player_id == id]
-    return {"id": player.id, "name": player.name, "events": player_events}
-
-    
-@app.post("/events", response_model=EventResponse, status_code=201)
-async def create_event(event_create: EventCreate, player_id: int):
-    player = next((p for p in players if p.id == player_id), None)
-    if not player:
-        raise HTTPException(status_code=404, detail="Player not found")
-    
-    # generate a new ID for the event that is not already in use
-    used_ids = [e.id for e in player.events]
-    new_id = max(used_ids) + 1 if used_ids else 1
-    
-    new_event = Event(id=new_id, type=event_create.type, detail=event_create.detail, timestamp=datetime.now(), player_id=player_id)
-    player.events.append(new_event)
-    events.append(new_event)
-    return {"id": new_event.id}
+    return PlayerInfo(id=player.id, name=player.name, events=player_events)
 
 @app.get("/players/{id}/events", response_model=List[Event])
 async def get_player_events(id: int, type: str = None):
@@ -87,3 +68,19 @@ async def get_player_events(id: int, type: str = None):
         ).dict()
         for e in player_events
     ]
+    
+@app.post("/players/{id}/events", response_model=EventResponse, status_code=201)
+async def create_event(event_create: EventCreate, player_id: int):
+    player = next((p for p in players if p.id == player_id), None)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    
+    used_ids = [e.id for e in player.events]
+    new_id = max(used_ids) + 1 if used_ids else 1
+    
+    new_event = Event(id=new_id, type=event_create.type, detail=event_create.detail, timestamp=datetime.now(), player_id=player_id)
+    player.events.append(new_event)
+    events.append(new_event)
+    return {"id": new_event.id}
+
