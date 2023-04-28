@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from models import Player, Event, PlayerCreate, PlayerInfo, PlayerResponse,PlayerGet, EventCreate,EventResponse
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -83,4 +83,20 @@ async def create_event(event_create: EventCreate, player_id: int):
     player.events.append(new_event)
     events.append(new_event)
     return {"id": new_event.id}
-
+@app.get("/events", response_model=List[Event])
+async def get_events(type: Optional[str] = None):
+    events_filtered = events
+    if type and type not in VALID_EVENT_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid event type")
+    if type:
+        events_filtered = [e for e in events_filtered if e.type == type]
+    return [
+        Event(
+            id=e.id,
+            type=e.type,
+            detail=e.detail,
+            player_id=e.player_id,
+            timestamp=e.timestamp
+        ).dict()
+        for e in events_filtered
+    ]
